@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from anjuke.items import AnjukeBean
+from anjuke_ana.db.base import get_sql_session
 from tools import remove_query_args, now_timestamp
 from scrapy.exceptions import DropItem
 import sqlite3
@@ -25,6 +27,7 @@ class AnjukePipeline(object):
         self.process_unit_price(item)
         self.porcess_area_info(item)
         self.process_buildtime_info(item)
+        self.process_comparison_data(item)
         item['get_time'] = now_timestamp()
         return item
 
@@ -63,6 +66,22 @@ class AnjukePipeline(object):
     def process_buildtime_info(self, item):
         # 2015年建造  ->  2015
         item['build_time_info'] = item['build_time_info'][:-3]
+
+    def process_comparison_data(self, item):
+        house_id = item['house_id']
+        session = get_sql_session()
+        bean = session.query(AnjukeBean).filter(AnjukeBean.house_id == house_id).one()
+        if bean is not None:
+            # 新的房源
+            ...
+        elif item['price'] != bean['price']:
+            # 价格变了
+            ...
+        session.close()
+
+    def close_spider(spider):
+        # 统计今天被卖点了房源(时间没有刷新的房源)
+        ...
 
 
 class Unvalue_remover_Pipeline(object):

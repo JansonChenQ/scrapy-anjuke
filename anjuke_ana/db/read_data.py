@@ -1,4 +1,7 @@
-from anjuke_ana.db.base import read_sql
+from scrapy import item
+
+from anjuke.items import AnjukeItem, AnjukeBean
+from anjuke_ana.db.base import read_sql, get_sql_session
 
 
 def get_all_locate_a():
@@ -44,9 +47,13 @@ def calc_average_price(locate_a):
 
 
 if __name__ == '__main__':
-    for locate_a in get_all_locate_a():
-        print(locate_a)
-        df = calc_average_price(locate_a)
-        print(df)
+    # for locate_a in get_all_locate_b("东宝"):
+    #     print(locate_a)
+    #     df = calc_average_price(locate_a)
+    #     print(df)
+    session = get_sql_session()
+    bean = session.query(AnjukeBean).filter(AnjukeBean.house_id == "A1554777965").one()
+    print(bean.title)
+    session.close()
         # for locate_b in get_all_locate_b(locate_a):
         #     print("     " + locate_b)

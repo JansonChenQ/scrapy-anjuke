@@ -108,3 +108,5 @@ venv.bak/
 /anjuke.sqlite
 /mySpider.log
 /anjuke/tmp/*
+*.pyc
+/.idea

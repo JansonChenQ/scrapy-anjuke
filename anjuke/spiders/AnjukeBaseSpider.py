@@ -116,7 +116,8 @@ class AnjukeBaseSpider(scrapy.Spider):
             yield item
 
         # 下一页地址
-        next_page_url = response.xpath("//*[@id='content']/div[4]/div[7]/a[@class='aNxt']/@href").extract_first()
+        # //*[@id="content"]/div[4]/div[6]/a[7]
+        next_page_url = response.xpath("//div[@class='multi-page']/a[@class='aNxt']/@href").extract_first()
         print(next_page_url)
         if next_page_url is not None:
             yield scrapy.Request(response.urljoin(next_page_url))

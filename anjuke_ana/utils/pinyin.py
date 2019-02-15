@@ -1,8 +1,9 @@
-from pypinyin import pinyin, lazy_pinyin
+# from pypinyin import pinyin, lazy_pinyin
 
 
 def get_pinyin(txt):
-    return lazy_pinyin(txt)
+    # return lazy_pinyin(txt)
+    return ''
 
 
 if __name__ == '__main__':
