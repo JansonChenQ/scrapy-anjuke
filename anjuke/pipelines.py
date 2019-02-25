@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
+import collections
+import datetime
+import json
+import time
+
 from anjuke.items import AnjukeBean
 from anjuke_ana.db.base import get_sql_session
-from tools import remove_query_args, now_timestamp
+from tools import remove_query_args, now_timestamp, now_fmt_time
 from scrapy.exceptions import DropItem
 import sqlite3
 from os import path
@@ -19,6 +24,10 @@ from anjuke.settings import DB_NAME
 
 
 class AnjukePipeline(object):
+    def __init__(self):
+        self.new = []
+        self.change = []
+
     def process_item(self, item, spider):
         # 数据预处理
         log.msg("数据预处理", log.DEBUG)
@@ -27,8 +36,8 @@ class AnjukePipeline(object):
         self.process_unit_price(item)
         self.porcess_area_info(item)
         self.process_buildtime_info(item)
-        self.process_comparison_data(item)
         item['get_time'] = now_timestamp()
+        self.process_comparison_data(item)
         return item
 
     def process_locate_info(self, item):
@@ -68,20 +77,69 @@ class AnjukePipeline(object):
         item['build_time_info'] = item['build_time_info'][:-3]
 
     def process_comparison_data(self, item):
-        house_id = item['house_id']
-        session = get_sql_session()
-        bean = session.query(AnjukeBean).filter(AnjukeBean.house_id == house_id).one()
-        if bean is not None:
-            # 新的房源
-            ...
-        elif item['price'] != bean['price']:
-            # 价格变了
-            ...
-        session.close()
+        try:
+            house_id = item['house_id']
+            session = get_sql_session()
+            bean = session.query(AnjukeBean).filter(AnjukeBean.house_id == house_id).all()
+            if not bean:
+                # 新的房源
+                log.msg("新房源:{0}".format('id:%s-title:%s-area:%s-address:%s' % (
+                    item["house_id"], item["title"], item["area"], item["address"])), log.INFO)
+                self.new.append(item)
+                self.writeFile("新房源:{0}\n".format(self.itemToStr(item)))
+            elif float(item['price']) != bean[0].price:
+                # 价格变了
+                log.msg("价格变化:{0} , 变化幅度{1}\n".format(
+                    self.itemToStr(item),
+                    bean[0].price - float(item['price'])), log.INFO)
+                self.change.append(item)
+                self.writeFile("价格变化:{0} , 变化幅度{1}\n".format(
+                    self.itemToStr(item),
+                    bean[0].price - float(item['price'])))
+            session.close()
+        except Exception as e:
+            print(e)
 
-    def close_spider(spider):
-        # 统计今天被卖点了房源(时间没有刷新的房源)
-        ...
+
+    def writeFile(self, data):
+        with open('logs.txt', 'a', encoding='utf-8') as f:
+            f.write(data)
+
+    def itemToStr(self, item):
+        return "{house_id},{title},{guarantee_info},{link},{area},{house_type},{floor_info},{build_time_info},{broker_name},{address},{locate_a},{locate_b},{tags},{price},{unit_price},{get_time}" \
+            .format(
+            house_id=item['house_id'],
+            title=item['title'],
+            guarantee_info=item['guarantee_info'],
+            link=item['link'],
+            area=item['area'],
+            house_type=item['house_type'],
+            floor_info=item['floor_info'],
+            build_time_info=item['build_time_info'],
+            broker_name=item['broker_name'],
+            address=item['address'],
+            locate_a=item['locate_a'],
+            locate_b=item['locate_b'],
+            tags=item['tags'],
+            price=item['price'],
+            unit_price=item['unit_price'],
+            get_time=item['get_time']
+        )
+
+        # return "{0}".format(item)
+
+    def close_spider(self, spider):
+        # 统计今天被变化的房源(时间没有刷新的房源)
+        today = datetime.date.today()
+        today_time = int(time.mktime(today.timetuple()))
+        session = get_sql_session()
+        sell = session.query(AnjukeBean).filter(AnjukeBean.get_time < today_time).all()
+        # print(self.change, self.new, sell)
+        # new_str = json.dumps(self.new)
+        # change_str = json.dumps(self.change)
+        sell_str = json.dumps(sell)
+        self.writeFile('卖掉:%s\n' % (sell_str) + now_fmt_time())
+        session.close()
 
 
 class Unvalue_remover_Pipeline(object):
@@ -123,7 +181,6 @@ class SQLiteStorePipeline(object):
             self.conn = None
 
     def process_item(self, item, spider):
-        log.msg("插入数据库", log.DEBUG)
         sql = self.sql_insert_or_ignore(item)
         self.execute_sql(sql)
         return item
@@ -134,7 +191,6 @@ class SQLiteStorePipeline(object):
         :param sql:
         :return:
         '''
-        log.msg("执行sql > {sql}".format(sql=sql))
         self.conn.execute(sql)
         if commit:
             self.conn.commit()

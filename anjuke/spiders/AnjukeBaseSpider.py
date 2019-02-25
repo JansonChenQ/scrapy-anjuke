@@ -61,9 +61,9 @@ class AnjukeBaseSpider(scrapy.Spider):
         crt_url = response.url
         print("当前url: {url}".format(url=crt_url))
 
-        pnum = extract_page_index(crt_url)
-        print(pnum)
-        cache_crt_page_index(pnum)
+        # pnum = extract_page_index(crt_url)
+        # print(pnum)
+        # cache_crt_page_index(pnum)
 
         item = AnjukeItem()
         print('------------------------------------------------')

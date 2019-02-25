@@ -6,6 +6,7 @@
 # http://doc.scrapy.org/en/latest/topics/items.html
 
 import scrapy
+from scrapy.item import DictItem
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -24,9 +25,10 @@ class AnjukeItem(scrapy.Item):
     locate_a = scrapy.Field()  # 一级区域信息 eg：浦东
     locate_b = scrapy.Field()  # 二级区域信息 eg：张江
     tags = scrapy.Field()  # 地址
-    price = scrapy.Field()  # 价格
-    unit_price = scrapy.Field()  # 每平米价格
-    get_time = scrapy.Field()  # 数据获取时间
+    price = scrapy.Field(serializer=float)  # 价格
+    unit_price = scrapy.Field(serializer=float)  # 每平米价格
+    get_time = scrapy.Field(serializer=float)  # 数据获取时间
+
 
 
 base = declarative_base()
@@ -50,3 +52,6 @@ class AnjukeBean(base):
     price = Column(Integer())  # 价格
     unit_price = Column(Integer())  # 每平米价格
     get_time = Column(String(20))  # 数据获取时间
+
+    def __str__(self):
+        return 'id:%s-title:%s-area:%s-address:%s' % (self.house_id, self.title, self.area, self.address)

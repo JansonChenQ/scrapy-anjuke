@@ -18,9 +18,11 @@ def remove_query_args(url):
 def now_timestamp():
     return datetime.datetime.now().timestamp()
 
+
 def fmt_time(timestamp, fmt="%Y-%m-%d %H:%M:%S"):
     time = datetime.datetime.fromtimestamp(timestamp)
     return time.strftime(fmt)
+
 
 def now_fmt_time():
     return fmt_time(now_timestamp())
